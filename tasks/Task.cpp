@@ -1,7 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "Task.hpp"
-#include <base/Logging.hpp>
+#include <base-logging/Logging.hpp>
 #include <random>
 
 using namespace trajectory_follower;
@@ -28,6 +28,8 @@ bool Task::configureHook()
 {
     if (! TaskBase::configureHook())
         return false;
+        
+    _robot2map.registerUpdateCallback(boost::bind(&Task::onPoseUpdate, this, _1));
     return true;
 }
 bool Task::startHook()
@@ -38,6 +40,27 @@ bool Task::startHook()
         return false;
     return true;
 }
+
+void Task::onPoseUpdate(const base::Time& ts)
+{
+    try
+    {
+        Eigen::Affine3d affine;
+        _robot2map.get(ts, affine, true);
+        robotPose = base::Pose(affine);
+    }catch(std::exception &e)
+    {
+        LOG_ERROR("Could not get robot pose! (%s)", e.what());
+        if( !trajectories.empty() )
+        {
+            LOG_WARN_S << "Clearing old trajectories, since there is no trajectory or pose data.";
+        }
+        trajectoryFollower.removeTrajectory();
+        _motion_command.write(motionCommand.toBaseMotion2D());
+        return;
+    }
+}
+
 void Task::updateHook()
 {
     TaskBase::updateHook();
@@ -45,22 +68,6 @@ void Task::updateHook()
     motionCommand.translation = 0;
     motionCommand.rotation    = 0;
     motionCommand.heading     = 0;
-
-    if( _robot_pose.readNewest( rbpose ) == RTT::NoData)
-    {
-        if( !trajectories.empty() )
-        {
-            LOG_WARN_S << "Clearing old trajectories, since there is no "
-                       "trajectory or pose data.";
-        }
-
-        trajectoryFollower.removeTrajectory();
-        _motion_command.write(motionCommand.toBaseMotion2D());
-
-        return;
-    }
-
-    base::Pose robotPose = base::Pose( rbpose.position, rbpose.orientation );
 
     if (_trajectory.readNewest(trajectories, false) == RTT::NewData && !trajectories.empty()) {
         trajectoryFollower.setNewTrajectory(SubTrajectory(trajectories.front()), robotPose);

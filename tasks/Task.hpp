@@ -31,7 +31,9 @@ namespace trajectory_follower{
 	std::vector< base::Trajectory > trajectories;
 	TrajectoryFollower trajectoryFollower;
         Motion2D motionCommand;
-        base::samples::RigidBodyState rbpose;
+        base::Pose robotPose;
+
+    virtual void onPoseUpdate(const base::Time& ts);
 
     public:
         /** TaskContext constructor for Task

@@ -20,17 +20,20 @@ task_context "Task" do
         doc("Trajectory the robot should follow").
         needs_buffered_connection
 
-    input_port("robot_pose", "/base/samples/RigidBodyState").
-        doc "Position and orientation of the Robot"
+    input_port("holonomic_trajectory", "trajectory_follower/SubTrajectory")
 
     # Output ports
     output_port("motion_command", "base/commands/Motion2D").
         doc "Drive command that should steer the robot to the target Pose"
 
     output_port("follower_data", "trajectory_follower/FollowerData").
-    	doc "Pose error calculated by NURBSCurve3D"
-    	
-    input_port("holonomic_trajectory", "trajectory_follower/SubTrajectory")
+        doc "Pose error calculated by NURBSCurve3D"
+
+    # Get robot pose in map from transformer
+    transformer do
+        transform "robot", "map"
+        max_latency 0.1
+    end
 
     # Runtime state for when trajectory finished or when actively following one
     runtime_states :FINISHED_TRAJECTORIES, :FOLLOWING_TRAJECTORY, :TURN_ON_SPOT, :LATERAL, :SLAM_POSE_INVALID
@@ -41,7 +44,7 @@ task_context "Task" do
     error_states :STABILITY_FAILED
 
     needs_configuration
-    port_driven
+    periodic 0.1
 end
 
 task_context "TurnVelocityToSteerAngleTask" do
