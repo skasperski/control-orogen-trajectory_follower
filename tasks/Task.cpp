@@ -43,11 +43,16 @@ bool Task::startHook()
 
 void Task::onPoseUpdate(const base::Time& ts)
 {
+    std::cout << "Got pose update: (" << robotPose.position(0) << ", " << robotPose.position(1) << ", " << robotPose.position(2) << ")" << std::endl;
     try
     {
         Eigen::Affine3d affine;
-        _robot2map.get(ts, affine, true);
+        _robot2map.get(ts, affine, false);
         robotPose = base::Pose(affine);
+        
+        base::samples::RigidBodyState rbs;
+        _robot2map.get(ts, rbs, false);
+        _current_pose_debug.write(rbs);
     }catch(std::exception &e)
     {
         LOG_ERROR("Could not get robot pose! (%s)", e.what());

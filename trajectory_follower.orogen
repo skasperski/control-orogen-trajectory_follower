@@ -29,6 +29,9 @@ task_context "Task" do
     output_port("follower_data", "trajectory_follower/FollowerData").
         doc "Pose error calculated by NURBSCurve3D"
 
+    output_port('current_pose_debug', 'base/samples/RigidBodyState').
+        doc("Currently used robot pose.")
+        
     # Get robot pose in map from transformer
     transformer do
         transform "robot", "map"
